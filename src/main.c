@@ -23,6 +23,10 @@ char book[] = {
 #embed "Frankenstein.txt"
     , '\0'};
 
+int main() { printf("%s", book); }
+
+/*
+
 /// Array of tokens registered so far
 /// No duplicates are allowed.
 char *tokens[MAX_WORD_COUNT];
@@ -196,3 +200,4 @@ int main() {
   } while (last_char(sentence) != '!');
   puts(sentence);
 }
+*/
