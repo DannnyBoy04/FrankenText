@@ -12,9 +12,9 @@ This is a basic C program that uses a Markov chain–like approach to generate r
 
 **2:**
 
-Sometimes I imagined that related during the last, for your undertaking such nonsense?
+*Sometimes I imagined that related during the last, for your undertaking such nonsense?*
 
-One subject!
+*One subject!*
 
 # Files
 
