@@ -2,6 +2,20 @@
 
 This is a basic C program that uses a Markov chain–like approach to generate random sentences from the book *Frankenstein; Or, The Modern Prometheus*. It tokenizes the text, tracks which words follow which, and then produces random sentences by linking together these successor relationships. The program continues generating until it finds a question sentence and then an exclamation sentence.
 
+## Example output
+
+**1:**
+
+*May had before my madness?*
+
+*Unhappy man!*
+
+**2:**
+
+Sometimes I imagined that related during the last, for your undertaking such nonsense?
+
+One subject!
+
 # Files
 
 ## main.c
