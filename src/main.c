@@ -107,41 +107,15 @@ void tokenize_and_fill_succs(char *delimiters, char *str) {
   }
 
   // Block for populating successor table.
-  char *succ;
+  for (size_t i = 1; i < order_len; i++) {
+    size_t previous_id = tokenIDs_in_order[i - 1];
+    size_t successor_id = tokenIDs_in_order[i];
 
-  for (size_t i = 0; i < tokens_size; i++) {
-    token = tokens[i];
-
-    for (size_t j = i + 1; j < order_len; j++) {
-      if (strcmp(token, tokens[tokenIDs_in_order[j - 1]]) == 0) {
-        succ = tokens[tokenIDs_in_order[j]];
-
-        if (succs_sizes[i] >= MAX_SUCCESSOR_COUNT) {
-          continue;
-        }
-
-        append_to_succs(token, succ);
-      }
+    if (succs_sizes[successor_id] >= MAX_SUCCESSOR_COUNT) {
+      continue;
     }
-  }
-}
 
-int main() {
-  replace_non_printable_chars_with_space();
-
-  tokenize_and_fill_succs(" \n\r", book);
-
-  if (tokens_size <= 0) {
-    printf("No tokens found. Book[0]=0X%02X\n", (unsigned char)book[0]);
-  }
-
-  printf("Tokens size: %zu\n", tokens_size);
-  for (size_t i = 0; i < 200 && i < tokens_size; i++) {
-    printf("Token %zu: '%s'\n", i, tokens[i]);
-    printf("Successors for this token: %zu\n", succs_sizes[i]);
-    for (size_t j = 0; j < 10 && j < succs_sizes[i]; j++) {
-      printf("  Successor %zu: '%s'\n", j, succs[i][j]);
-    }
+    append_to_succs(tokens[previous_id], tokens[successor_id]);
   }
 }
 
@@ -182,18 +156,23 @@ size_t random_token_id_that_starts_a_sentence() {
   return tokenID;
 }
 
-/*
-
-/// Generates a random sentence using `tokens`, `succs`, and `succs_sizes`.
-/// The sentence array will be filled up to `sentence_size-1` characters using
+/// Generates a random sentence using \c tokens, \c succs, and \c succs_sizes.
+/// The sentence array will be filled up to \c sentence_size-1 characters using
 /// random tokens until:
-/// - a token is found where `token_ends_a_sentence()`
-/// - or more tokens cannot be concatenated to the `sentence` anymore.
-///  Returns the filled sentence array.
+/// - a token is found where \c token_ends_a_sentence
+/// - or more tokens cannot be concatenated to the \c sentence anymore.
+/// Returns the filled sentence array.
+///
+/// @param sentence array what will be used for the sentence.
+//
+//                  Will be overwritten. Does not have to be initialized.
+/// @param sentence_size
+/// @return input sentence pointer
 char *generate_sentence(char *sentence, size_t sentence_size) {
   size_t current_token_id = random_token_id_that_starts_a_sentence();
-  auto token = tokens[current_token_id];
+  char *token = tokens[current_token_id];
 
+  sentence[0] = '\0';
   strcat(sentence, token);
   if (token_ends_a_sentence(token))
     return sentence;
@@ -204,7 +183,28 @@ char *generate_sentence(char *sentence, size_t sentence_size) {
   // Concatenates random successors to the sentence as long as
   // `sentence` can hold them.
   do {
-    // YOUR CODE HERE
+    size_t successor_count = succs_sizes[current_token_id];
+    if (successor_count <= 0) {
+      break;
+    }
+
+    size_t random_successor_index = rand() % successor_count;
+    char *successor = succs[current_token_id][random_successor_index];
+
+    if (token_ends_a_sentence(successor)) {
+      strcat(sentence, " ");
+      sentence_len_next = strlen(sentence);
+      strcat(sentence, successor);
+      break;
+    }
+
+    strcat(sentence, " ");
+    sentence_len_next = strlen(sentence);
+
+    strcat(sentence, successor);
+    sentence_len_next = strlen(sentence);
+
+    current_token_id = token_id(successor);
   } while (sentence_len_next < sentence_size - 1);
   return sentence;
 }
@@ -216,22 +216,19 @@ int main() {
   tokenize_and_fill_succs(delimiters, book);
 
   char sentence[1000];
-  srand(time(NULL));
+  srand(time(nullptr)); // Be random each time we run the program
 
-  // Initialize `sentence` and then find a question sentence.
+  // Generate sentences until we find a question sentence.
   do {
-    // YOUR CODE HERE
     generate_sentence(sentence, sizeof sentence);
   } while (last_char(sentence) != '?');
   puts(sentence);
   puts("");
 
-  // Initialize `sentence` and then find a sentence ending with exclamation
-  // mark.
+  // Initialize `sentence` and then generate sentences until we find a sentence
+  // ending with an exclamation mark.
   do {
-    // YOUR CODE HERE
     generate_sentence(sentence, sizeof sentence);
   } while (last_char(sentence) != '!');
   puts(sentence);
 }
-*/
