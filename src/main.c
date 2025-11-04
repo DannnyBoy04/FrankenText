@@ -1,7 +1,9 @@
 /**
  * @file main.c
  * @author Dánjal Leitisstein Olsen (s255821@dtu.dk)
- * @brief
+ * @brief Generates a random sentence from the novel "Frankenstein; Or, The
+ * Modern Prometheus" by use of Markov chains. I have only written some segments
+ * of the entire program.
  * @version 0.1
  * @date 2025-10-28
  *
@@ -83,12 +85,19 @@ void append_to_succs(char *token, char *succ) {
 /// Creates tokens from the `book` and fills `tokens` and `succs` arrays using
 /// the `token`s.
 void tokenize_and_fill_succs(char *delimiters, char *str) {
-  // Block for tokenizing Frankenstein.txt and assigning token IDs.
+  // ======================================================================
+  // === Block for tokenizing Frankenstein.txt and assigning token IDs. ===
+  // ======================================================================
+
+  // Make an array to later contain all of the tokens
+  // in the input string as token IDs.
   size_t tokenIDs_in_order[MAX_WORD_COUNT];
   size_t order_len = 0;
 
+  // Start the tokenization process of the input string.
   char *token = strtok(str, delimiters);
   while (token) {
+    // Check if the number of words exceeds MAX_WORD_COUNT.
     if (order_len >= MAX_WORD_COUNT) {
       fprintf(
           stderr,
@@ -96,25 +105,36 @@ void tokenize_and_fill_succs(char *delimiters, char *str) {
           (int)MAX_WORD_COUNT);
       exit(EXIT_FAILURE);
     }
+    // Call token_id to populate the 'tokens' array only with unique tokens.
     size_t id = token_id(token);
+    // Populate the 'tokenIDs_in_order' array with all of the tokens,
+    // duplicates included.
     tokenIDs_in_order[order_len] = id;
     order_len++;
     token = strtok(NULL, delimiters);
   }
 
+  // If there there are fewer than 2 tokens, there can be no successors -> stop.
   if (order_len < 2) {
     return;
   }
 
-  // Block for populating successor table.
+  // =============================================
+  // === Block for populating successor table. ===
+  // =============================================
+
+  // Start at the second token and save it and the previous one to variables.
   for (size_t i = 1; i < order_len; i++) {
     size_t previous_id = tokenIDs_in_order[i - 1];
     size_t successor_id = tokenIDs_in_order[i];
 
+    // If the successor array for a token is already full,
+    // skip this iteration of the loop.
     if (succs_sizes[successor_id] >= MAX_SUCCESSOR_COUNT) {
       continue;
     }
 
+    // If there was room for a successor, append it to the successor array.
     append_to_succs(tokens[previous_id], tokens[successor_id]);
   }
 }
@@ -128,6 +148,8 @@ char last_char(char *str) {
 
 /// Returns whether the token ends with `!`, `?` or `.`.
 bool token_ends_a_sentence(char *token) {
+  // If the last character of a token isn't "!?.",
+  // then it doesn't end a sentence.
   if (!(last_char(token) == '!' || last_char(token) == '?' ||
         last_char(token) == '.')) {
     return false;
@@ -144,9 +166,12 @@ size_t random_token_id_that_starts_a_sentence() {
   size_t randomTokenID;
   bool foundID = false;
 
+  // Keep generating
   while (!foundID) {
     // Generate a random tokenID from 0..tokens_size - 1.
     randomTokenID = rand() % tokens_size;
+    // If the first character of the generated token is uppercase,
+    // return its ID.
     if (isupper(tokens[randomTokenID][0])) {
       tokenID = randomTokenID;
       foundID = true;
@@ -164,7 +189,6 @@ size_t random_token_id_that_starts_a_sentence() {
 /// Returns the filled sentence array.
 ///
 /// @param sentence array what will be used for the sentence.
-//
 //                  Will be overwritten. Does not have to be initialized.
 /// @param sentence_size
 /// @return input sentence pointer
@@ -183,14 +207,18 @@ char *generate_sentence(char *sentence, size_t sentence_size) {
   // Concatenates random successors to the sentence as long as
   // `sentence` can hold them.
   do {
+    // Find the number of successors for the current token.
     size_t successor_count = succs_sizes[current_token_id];
+    // If the current token has no successors, break the loop.
     if (successor_count <= 0) {
       break;
     }
 
+    // Pick a random successor for the current token.
     size_t random_successor_index = rand() % successor_count;
     char *successor = succs[current_token_id][random_successor_index];
 
+    // If the successor ends a sentence, append it and break the loop.
     if (token_ends_a_sentence(successor)) {
       strcat(sentence, " ");
       sentence_len_next = strlen(sentence);
@@ -198,12 +226,16 @@ char *generate_sentence(char *sentence, size_t sentence_size) {
       break;
     }
 
+    // Append space to after the last token.
     strcat(sentence, " ");
     sentence_len_next = strlen(sentence);
 
+    // Append the successor to the sentence.
     strcat(sentence, successor);
     sentence_len_next = strlen(sentence);
 
+    // Advance to the successor's token ID
+    // so the next iteration follows the chain.
     current_token_id = token_id(successor);
   } while (sentence_len_next < sentence_size - 1);
   return sentence;

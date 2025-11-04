@@ -1,0 +1,103 @@
+flowchart TD
+
+%% === MAIN FUNCTION ===
+subgraph MAIN["main.c - main()"]
+    A0(["Start Program"])
+    A1["Replace non-printable characters in the book with spaces"]
+    A2["Define delimiters (space, newline, carriage return)"]
+    A3["Tokenize the book and build token and successor tables"]
+    A4["Prepare sentence buffer"]
+    A5["Seed random number generator with current time"]
+    A6["Repeat: generate a sentence until it ends with a '?'"]
+    A7["Print the generated question sentence"]
+    A8["Print an empty line"]
+    A9["Repeat: generate a sentence until it ends with a '!'"]
+    A10["Print the generated exclamation sentence"]
+    A11(["End Program"])
+    A0 --> A1 --> A2 --> A3 --> A4 --> A5 --> A6 --> A7 --> A8 --> A9 --> A10 --> A11
+end
+
+
+%% === TOKENIZATION AND SUCCESSOR BUILDING ===
+subgraph TOKENIZE["tokenize_and_fill_succs()"]
+    B0(["Start tokenization"])
+    B1["Create array to store token IDs from the book"]
+    B2["Split input text into tokens using strtok()"]
+    B3["For each token: if new, register ID and store it in order array"]
+    B4["If total tokens exceed MAX_WORD_COUNT -> print error and exit"]
+    B5["If fewer than 2 tokens -> stop (no successors possible)"]
+    B6["For each pair of consecutive tokens: add successor if list not full"]
+    B7(["Return"])
+    B0 --> B1 --> B2 --> B3 --> B4 --> B5 --> B6 --> B7
+end
+
+
+%% === CLEANING ===
+subgraph CLEAN["replace_non_printable_chars_with_space()"]
+    C0(["Start"])
+    C1["Loop through every character in the book"]
+    C2["If not printable -> replace with space"]
+    C3(["Return"])
+    C0 --> C1 --> C2 --> C1 --> C3
+end
+
+
+%% === TOKEN MANAGEMENT ===
+subgraph TOKENMGMT["token_id() and append_to_succs()"]
+    D0(["token_id()"])
+    D1["Loop through all known tokens"]
+    D2{"Token found?"}
+    D2 -->|Yes| D3(["Return its ID"])
+    D2 -->|No| D4["Register new token and return new ID"]
+    D0 --> D1 --> D2
+
+    E0(["append_to_succs()"])
+    E1["Find successor list for token"]
+    E2{"Is list full?"}
+    E2 -->|Yes| E3["Exit with error"]
+    E2 -->|No| E4["Append successor"]
+    E4 --> E5(["Return"])
+    E0 --> E1 --> E2
+end
+
+
+%% === SENTENCE GENERATION ===
+subgraph GEN["generate_sentence()"]
+    F0(["Start sentence generation"])
+    F1["Pick random token starting with capital letter"]
+    F2["Start sentence with that token"]
+    F3{"Does token end with '.', '!' or '?'?"}
+    F3 -->|Yes| F4(["Return sentence"])
+    F3 -->|No| F5["While sentence length < limit"]
+    F6["Get successors for current token"]
+    F7{"Any successors?"}
+    F7 -->|No| F8(["Stop"])
+    F7 -->|Yes| F9["Pick random successor"]
+    F10{"Does successor end a sentence?"}
+    F10 -->|Yes| F11["Append successor and finish"]
+    F10 -->|No| F12["Append successor and continue"]
+    F12 --> F13["Set current token = successor"]
+    F13 --> F5
+    F11 --> F14(["Return sentence"])
+    F5 --> F6 --> F7
+    F8 --> F14
+    F9 --> F10
+    F0 --> F1 --> F2 --> F3
+end
+
+
+%% === HELPER FUNCTIONS ===
+subgraph HELPERS["Helper functions"]
+    H0(["last_char(str): returns last character"])
+    H1(["token_ends_a_sentence(): true if ends with '.', '?' or '!'"])
+    H2(["random_token_id_that_starts_a_sentence(): picks random capitalized token"])
+end
+
+
+%% === FUNCTION RELATIONSHIPS ===
+A1 -.-> CLEAN
+A3 -.-> TOKENIZE
+A6 -.-> GEN
+A9 -.-> GEN
+TOKENIZE -.-> TOKENMGMT
+GEN -.-> HELPERS
