@@ -9,23 +9,19 @@
  */
 
 #include <ctype.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#define MAX_WORD_COUNT 50'000
-#define MAX_SUCCESSOR_COUNT MAX_WORD_COUNT / 10
-#define RAND_MAX 50'000
+#define MAX_WORD_COUNT 20'000
+#define MAX_SUCCESSOR_COUNT MAX_WORD_COUNT / 2
 
 char book[] = {
 #embed "Frankenstein.txt"
     , '\0'};
-
-int main() { printf("%s", book); }
-
-/*
 
 /// Array of tokens registered so far
 /// No duplicates are allowed.
@@ -41,15 +37,15 @@ size_t tokens_size = 0;
 /// to store `token_id`s
 char *succs[MAX_WORD_COUNT][MAX_SUCCESSOR_COUNT];
 /// `succs`'s size
-size_t succs_sizes[MAX_WORD_COUNT];
+size_t succs_sizes[MAX_WORD_COUNT] = {};
 
 /// Overwrites non-printable characters in `book` with a space.
 /// Non-printable characters may lead to duplicates like
 /// `"\xefthe" != "the"` even both print `the`.
 void replace_non_printable_chars_with_space() {
-  // YOUR CODE HERE
+  size_t len = strlen(book);
 
-  for (size_t i = 0; i < strlen(book) - 1; i++) {
+  for (size_t i = 0; i < len; i++) {
     // If book[i] is not one of the ASCII printable characters,
     // replace it with a space.
     if (!isprint(book[i])) {
@@ -74,10 +70,10 @@ size_t token_id(char *token) {
 
 /// Appends a token to the successors list of a `token`
 void append_to_succs(char *token, char *succ) {
-  auto next_empty_index_ptr = &succs_sizes[token_id(token)];
+  size_t *next_empty_index_ptr = &succs_sizes[token_id(token)];
 
   if (*next_empty_index_ptr >= MAX_SUCCESSOR_COUNT) {
-    printf("Successor array full.");
+    fprintf(stderr, "Successor array full.");
     exit(EXIT_FAILURE);
   }
 
@@ -87,30 +83,70 @@ void append_to_succs(char *token, char *succ) {
 /// Creates tokens from the `book` and fills `tokens` and `succs` arrays using
 /// the `token`s.
 void tokenize_and_fill_succs(char *delimiters, char *str) {
-  // YOUR CODE HERE
-
   // Block for tokenizing Frankenstein.txt and assigning token IDs.
+  size_t tokenIDs_in_order[MAX_WORD_COUNT];
+  size_t order_len = 0;
 
-  char *token;
-  size_t index = 0;
-
-  token = strtok(str, delimiters);
-
+  char *token = strtok(str, delimiters);
   while (token) {
-    tokens[index] = token;
-
+    if (order_len >= MAX_WORD_COUNT) {
+      fprintf(
+          stderr,
+          "Too many tokens (>%d). Increase MAX_WORD_COUNT or shorten input.\n",
+          (int)MAX_WORD_COUNT);
+      exit(EXIT_FAILURE);
+    }
+    size_t id = token_id(token);
+    tokenIDs_in_order[order_len] = id;
+    order_len++;
     token = strtok(NULL, delimiters);
+  }
 
-    index++;
+  if (order_len < 2) {
+    return;
   }
 
   // Block for populating successor table.
+  char *succ;
+
+  for (size_t i = 0; i < tokens_size; i++) {
+    token = tokens[i];
+
+    for (size_t j = i + 1; j < order_len; j++) {
+      if (strcmp(token, tokens[tokenIDs_in_order[j - 1]]) == 0) {
+        succ = tokens[tokenIDs_in_order[j]];
+
+        if (succs_sizes[i] >= MAX_SUCCESSOR_COUNT) {
+          continue;
+        }
+
+        append_to_succs(token, succ);
+      }
+    }
+  }
+}
+
+int main() {
+  replace_non_printable_chars_with_space();
+
+  tokenize_and_fill_succs(" \n\r", book);
+
+  if (tokens_size <= 0) {
+    printf("No tokens found. Book[0]=0X%02X\n", (unsigned char)book[0]);
+  }
+
+  printf("Tokens size: %zu\n", tokens_size);
+  for (size_t i = 0; i < 200 && i < tokens_size; i++) {
+    printf("Token %zu: '%s'\n", i, tokens[i]);
+    printf("Successors for this token: %zu\n", succs_sizes[i]);
+    for (size_t j = 0; j < 10 && j < succs_sizes[i]; j++) {
+      printf("  Successor %zu: '%s'\n", j, succs[i][j]);
+    }
+  }
 }
 
 /// Returns last character of a string
 char last_char(char *str) {
-  // YOUR CODE HERE
-
   char lastChar = str[strlen(str) - 1];
 
   return lastChar;
@@ -118,8 +154,6 @@ char last_char(char *str) {
 
 /// Returns whether the token ends with `!`, `?` or `.`.
 bool token_ends_a_sentence(char *token) {
-  // YOUR CODE HERE
-
   if (!(last_char(token) == '!' || last_char(token) == '?' ||
         last_char(token) == '.')) {
     return false;
@@ -132,8 +166,6 @@ bool token_ends_a_sentence(char *token) {
 /// capital letter.
 /// Uses `tokens`, `tokens_size.
 size_t random_token_id_that_starts_a_sentence() {
-  // YOUR CODE HERE
-
   size_t tokenID = 0;
   size_t randomTokenID;
   bool foundID = false;
@@ -149,6 +181,8 @@ size_t random_token_id_that_starts_a_sentence() {
 
   return tokenID;
 }
+
+/*
 
 /// Generates a random sentence using `tokens`, `succs`, and `succs_sizes`.
 /// The sentence array will be filled up to `sentence_size-1` characters using
